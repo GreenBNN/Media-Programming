@@ -27,11 +27,15 @@ s1_sound = pygame.mixer.Sound("shmup/snd/horse.wav")
 s2_sound = pygame.mixer.Sound("shmup/snd/goat.wav")
 s3_sound = pygame.mixer.Sound("shmup/snd/sheep.wav")
 
+bullet_image = pygame.image.load("shmup/img/bullet.png")
+reload_sound = pygame.mixer.Sound("shmup/snd/bullet.wav")
+
 # Load bomb sound
 bomb_sound = pygame.mixer.Sound("shmup/snd/bomb.wav")
 
 lightBlue = (4, 27, 96)
 
+last_bullet_time = pygame.time.get_ticks()
 
 # Function to play sound and respawn image
 def play_sound_and_respawn(image_rect, sound):
@@ -91,10 +95,47 @@ def is_on_image(image_rect, pos):
         image_rect.y <= pos[1] <= image_rect.y + image_rect.height
     )
 
+def draw_bullets():
+    for i in range(bullet_count):
+        screen.blit(bullet_image, (10 + i * (bullet_image.get_width() + 5), height - 50))
+
+def fire_bullet():
+    global bullet_count, reloading, last_bullet_time
+
+    if bullet_count > 0 and not reloading:
+        current_time = pygame.time.get_ticks()
+
+        # Add a delay of 300 milliseconds (0.3 seconds) before firing the next bullet
+        if current_time - last_bullet_time >= 300:
+            bullet_count -= 1
+            last_bullet_time = current_time
+            if bullet_count == 0:
+                reload_bullets()
+                draw_bullets()
+
+            return True
+    elif reloading:
+        # If reloading, reset the reloading flag once the process is completed
+        reloading = False
+
+    return False
+
+def reload_bullets():
+    global bullet_count, reloading
+    reloading = True
+    bullet_count = 5
+    reload_sound.play()
+
 # Initialize image rectangles
 horse_rect = ImageRect(horse_image)
 sheep_rect = ImageRect(sheep_image)
 goat_rect = ImageRect(goat_image)
+
+# Additional image rectangles
+image_rect4 = ImageRect(horse_image)
+image_rect5 = ImageRect(sheep_image)
+image_rect6 = ImageRect(goat_image)
+image_rect7 = ImageRect(horse_image)
 
 # Game loop
 running = True
@@ -112,7 +153,6 @@ bombs = []  # List to store multiple bombs
 bomb_creation_timer = 0
 bomb_creation_interval = 2000  # Time interval in milliseconds (5 seconds)
 bomb_speed = 10  # Adjust this value to control bomb speed
-
 # Initialize lives
 lives = 3
 
@@ -125,6 +165,10 @@ speed_increase_amount = 1  # Adjust this value to control the speed increase
 GAME_RUNNING = 0
 GAME_OVER = 1
 game_state = GAME_RUNNING
+
+# bullet
+bullet_count = 5
+reloading = False
 
 # Inside the game loop
 while running:
@@ -139,7 +183,8 @@ while running:
                 speed_increase_timer = 0
                 bomb_creation_timer = 0
                 bombs = []
-                for image_rect in [horse_rect, sheep_rect, goat_rect]:
+                bullets = []
+                for image_rect in [horse_rect, sheep_rect, goat_rect, image_rect4, image_rect5, image_rect6, image_rect7]:
                     image_rect.reset()
 
     if game_state == GAME_RUNNING:
@@ -153,20 +198,43 @@ while running:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         mouse_click = pygame.mouse.get_pressed()
 
-        for image_rect, sound in zip(
-            [horse_rect, sheep_rect, goat_rect],
-            [s1_sound, s2_sound, s3_sound, s1_sound, s2_sound, s3_sound, s1_sound]
-        ):
-            if image_rect.x <= mouse_x <= image_rect.x + image_rect.width and \
-                    image_rect.y <= mouse_y <= image_rect.y + image_rect.height and mouse_click[0]:
-                play_sound_and_respawn(image_rect, sound)
-                score += 100
+        # bullet
+
+        # Fire bullet on mouse click
+        if mouse_click[0]:
+            if fire_bullet():
+                # Perform actions when a bullet is fired
+                for image_rect, sound in zip(
+                        [horse_rect, sheep_rect, goat_rect, image_rect4, image_rect5, image_rect6, image_rect7],
+                        [s1_sound, s2_sound, s3_sound, s1_sound, s2_sound, s3_sound, s1_sound]
+                ):
+                    if is_on_image(image_rect, (mouse_x, mouse_y)):
+                        play_sound_and_respawn(image_rect, sound)
+                        score += 100
+
+
+        # Draw bullets
+        draw_bullets()
+
+        # Check for reloading
+        if reloading and pygame.time.get_ticks() % 1000 == 0:  # Adjust the reloading duration
+            reloading = False
+
+
+        # for image_rect, sound in zip(
+        #     [horse_rect, sheep_rect, goat_rect, image_rect4, image_rect5, image_rect6, image_rect7],
+        #     [s1_sound, s2_sound, s3_sound, s1_sound, s2_sound, s3_sound, s1_sound]
+        # ):
+        #     if image_rect.x <= mouse_x <= image_rect.x + image_rect.width and \
+        #             image_rect.y <= mouse_y <= image_rect.y + image_rect.height and mouse_click[0]:
+        #         play_sound_and_respawn(image_rect, sound)
+        #         score += 100
 
         if bomb_rect.x <= mouse_x <= bomb_rect.x + bomb_rect.width and \
                 bomb_rect.y <= mouse_y <= bomb_rect.y + bomb_rect.height and mouse_click[0]:
             handle_bomb_click(bomb_rect)
 
-        for image_rect in [horse_rect, sheep_rect, goat_rect]:
+        for image_rect in [horse_rect, sheep_rect, goat_rect, image_rect4, image_rect5, image_rect6, image_rect7]:
             move(image_rect)
             screen.blit(image_rect.image, (image_rect.x, image_rect.y))
 
@@ -174,7 +242,7 @@ while running:
         pos = pygame.mouse.get_pos()
         r = 20
         l = 15
-        color = (255, 0, 0) if any(is_on_image(image_rect, pos) for image_rect in [horse_rect, sheep_rect, goat_rect]) else (0, 255, 0)
+        color = (255, 0, 0) if any(is_on_image(image_rect, pos) for image_rect in [horse_rect, sheep_rect, goat_rect, image_rect4, image_rect5, image_rect6, image_rect7]) else (0, 255, 0)
 
         pygame.draw.ellipse(screen, color, (pos[0] - r / 2, pos[1] - r / 2, r, r), 4)
         pygame.draw.line(screen, color, (pos[0], pos[1] - l / 2), (pos[0], pos[1] - l), 4)
@@ -200,7 +268,7 @@ while running:
         # Check speed increase timer and increase speed
         speed_increase_timer += clock.get_time()*2
         if speed_increase_timer >= speed_increase_interval:
-            for image_rect in [horse_rect, sheep_rect, goat_rect]:
+            for image_rect in [horse_rect, sheep_rect, goat_rect, image_rect4, image_rect5, image_rect6, image_rect7]:
                 image_rect.speed += speed_increase_amount
             speed_increase_timer = 0
             bomb_speed += 1
