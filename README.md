@@ -6,9 +6,9 @@ Pygame Shmup Part 10: Explosions · KCC Blog (kidscancode.org) 을 변형한 게
 FinalProject : 위 게임을 변형해서 만든 게임이다.
 
 1-1. 농장을 배경으로 어울리는 양, 염소, 말이 랜덤으로 생성되어 움직인다.
-
+/n
 1-2. 이떄 양, 염소, 말은 png 파일이며 상, 하, 좌, 우 랜덤으로 움직인다.
-
+/n
 1-3. 만약 window size 를 넘어서면 위치가 재조정 된다.
 
 
