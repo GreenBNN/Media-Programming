@@ -1,5 +1,7 @@
 # Media-Programming
 
+catch_animals.py 를 다운받아 실행하면 된다.
+
 Pygame Shmup Part 10: Explosions · KCC Blog (kidscancode.org) 을 변형한 게임이다.
 
 
